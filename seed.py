@@ -8,6 +8,8 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent / "inventory.db"
 BASE = "/tmf-api/resourceInventoryManagement/v4"
 
+TOTAL_ASSETS = random.randint(650, 950)  # Random count above 600 (and <= 1,000)
+
 CATEGORIES = ["Metro-E Router", "ODP Box", "Optical Core Switch", "Base Transceiver Station", "GPON OLT"]
 PURPOSES = ["Backhaul Transport", "Last-Mile Access", "Core Aggregation", "Enterprise Leased Line", "Disaster Recovery"]
 CITIES = [
@@ -21,9 +23,9 @@ STATUSES = ["available", "reserved", "standby", "alarm", "suspended"]
 
 db = sqlite3.connect(DB_PATH)
 db.execute("CREATE TABLE IF NOT EXISTS resource (id TEXT PRIMARY KEY, doc TEXT)")
-db.execute("DELETE FROM resource")  # Reset clean slate for 1,000 items
+db.execute("DELETE FROM resource")
 
-for i in range(1, 1001):
+for i in range(1, TOTAL_ASSETS + 1):
     rid = str(uuid.uuid4())
     cat = random.choice(CATEGORIES)
     city, gps = random.choice(CITIES)
@@ -83,4 +85,4 @@ for i in range(1, 1001):
     db.execute("INSERT INTO resource VALUES (?, ?)", (rid, json.dumps(doc)))
 
 db.commit()
-print("Successfully seeded 1,000 TMF639 assets into inventory.db")
+print(f"Successfully seeded {TOTAL_ASSETS} TMF639 assets into inventory.db")
