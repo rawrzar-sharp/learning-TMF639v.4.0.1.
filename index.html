@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset Inventory</title>
+<style>
+  :root {
+    --red: #c8102e;
+    --red-dark: #a00d25;
+    --ink: #111;
+    --muted: #666;
+    --line: #d9d9d9;
+    --soft: #f5f5f5;
+    --bg: #fff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+           padding: 16px 24px; border-bottom: 3px solid var(--red); }
+  h1 { margin: 0; font-size: 22px; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .hdr-actions { display: flex; gap: 12px; align-items: center; }
+  .hdr-actions a { color: var(--ink); font-size: 14px; }
+  main { padding: 20px 24px 40px; max-width: 1200px; margin: 0 auto; }
+
+  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--ink); background: #fff; color: var(--ink); padding: 7px 14px; }
+  button:hover { background: var(--soft); }
+  button.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--red-dark); }
+  button.danger { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+  button.danger:hover { background: var(--red-dark); }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .toolbar input[type=search] { flex: 1 1 240px; }
+  .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+  input, select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid #999; border-radius: 6px; padding: 7px 9px; width: 100%; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 820px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  td .cat { color: var(--muted); font-size: 12px; }
+  td.num { text-align: right; white-space: nowrap; }
+  td.actions { white-space: nowrap; }
+  .btns { display: flex; gap: 6px; }
+  .empty { padding: 36px 16px; text-align: center; color: var(--muted); }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #999; }
+  .pill.available::before { background: #1a8f3c; }
+  .pill.reserved::before { background: #d98a00; }
+  .pill.alarm::before { background: var(--red); }
+  .pill.suspended::before, .pill.standby::before { background: #777; }
+
+  /* API activity */
+  .log { margin-top: 28px; }
+  .log h2 { font-size: 16px; margin: 0 0 4px; }
+  .log p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+  .log details { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; }
+  .log summary { cursor: pointer; padding: 6px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .log summary span { overflow-wrap: anywhere; min-width: 0; }
+  .log .m { font-weight: 700; min-width: 56px; }
+  .log .ok { color: #1a8f3c; font-weight: 700; }
+  .log .err { color: var(--red); font-weight: 700; }
+  pre { margin: 0; padding: 10px; background: var(--soft); overflow: auto; font-size: 12px; max-height: 260px; white-space: pre-wrap; word-break: break-word; }
+
+  /* dialogs */
+  dialog { border: 0; border-radius: 10px; padding: 0; width: min(760px, 94vw); max-height: 92vh; box-shadow: 0 10px 40px rgba(0,0,0,.35); color: var(--ink); background: #fff; }
+  dialog.narrow { width: min(460px, 94vw); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  .dlg-head { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 2; }
+  .dlg-head h2 { margin: 0; font-size: 18px; }
+  .dlg-body { padding: 16px 20px; }
+  .dlg-foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; position: sticky; bottom: 0; background: #fff; }
+  .x { border: 0; font-size: 22px; line-height: 1; padding: 2px 8px; }
+
+  fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 16px; padding: 10px 14px 14px; }
+  legend { font-weight: 700; padding: 0 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .map { display: block; font-weight: 400; font-size: 11px; color: var(--muted); font-family: ui-monospace, Consolas, monospace; margin-top: 2px; }
+  .req { color: var(--red); }
+  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+  .rows > div { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+  .rows.rel > div { grid-template-columns: 2fr 1fr auto; }
+  .formerr { background: #fdecee; border: 1px solid var(--red); color: #7a0a1c; border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; display: none; }
+  .formerr.show { display: block; }
+  .preview { margin-top: 8px; display: flex; gap: 12px; align-items: center; }
+  .preview img { max-width: 140px; max-height: 110px; border: 1px solid var(--line); border-radius: 6px; }
+
+  dl { margin: 0 0 14px; }
+  .kv { display: grid; grid-template-columns: 170px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--soft); }
+  .kv dt { color: var(--muted); font-size: 13px; }
+  .kv dd { margin: 0; word-break: break-word; }
+  .sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--red); font-weight: 700; margin: 16px 0 4px; }
+  .note { border-left: 3px solid var(--line); padding: 4px 10px; margin: 6px 0; }
+  .note small { color: var(--muted); }
+  .viewimg { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 8px; }
+
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; display: none; z-index: 99; max-width: 90vw; }
+  #toast.err { background: var(--red); }
+  #toast.show { display: block; }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .rows > div, .rows.rel > div { grid-template-columns: 1fr; }
+    .kv { grid-template-columns: 1fr; gap: 0; }
+    header, main { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Asset Inventory</h1>
+    <p class="sub">TMF639 Resource Inventory Management &middot; v4.0.1 &middot; practice app</p>
+  </div>
+  <div class="hdr-actions">
+    <a href="/docs" target="_blank" rel="noopener">API docs</a>
+    <button id="btnAdd" class="primary">+ Add asset</button>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search name, serial number, brand, location..." aria-label="Search assets">
+    <select id="statusFilter" aria-label="Filter by status" style="width:auto">
+      <option value="">All statuses</option>
+      <option>available</option><option>reserved</option><option>standby</option>
+      <option>alarm</option><option>suspended</option><option>unknown</option>
+    </select>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Asset</th><th>Serial number</th><th>Status</th><th>Usage</th><th>Location</th><th style="text-align:right">Purchase price</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+
+  <section class="log">
+    <h2>API activity</h2>
+    <p>Every click on this page sends a real TMF639 request. Open a line to see exactly what was sent and received.</p>
+    <div id="logList"></div>
+  </section>
+</main>
+
+<!-- ============ Add / Edit dialog ============ -->
+<dialog id="dlgForm">
+  <form id="assetForm" novalidate>
+    <div class="dlg-head">
+      <h2 id="formTitle">Add asset</h2>
+      <button type="button" class="x" data-close aria-label="Close">&times;</button>
+    </div>
+    <div class="dlg-body">
+      <div class="formerr" id="formErr" role="alert"></div>
+
+      <fieldset>
+        <legend>1. Asset details</legend>
+        <div class="grid">
+          <div class="full"><label for="f_name">Asset name <span class="req">*</span><span class="map">name</span></label>
+            <input id="f_name" maxlength="120" placeholder="e.g. Core Router A1"></div>
+          <div><label for="f_category">Asset type<span class="map">category + resourceSpecification</span></label>
+            <select id="f_category"></select></div>
+          <div><label for="f_serial">Serial number (must be unique)<span class="map">resourceCharacteristic: serialNumber</span></label>
+            <input id="f_serial" maxlength="80" placeholder="e.g. SN-00123"></div>
+          <div><label for="f_brand">Brand / manufacturer<span class="map">resourceCharacteristic: brand</span></label>
+            <input id="f_brand" maxlength="80" placeholder="e.g. Cisco"></div>
+          <div><label for="f_model">Model<span class="map">resourceCharacteristic: model</span></label>
+            <input id="f_model" maxlength="80" placeholder="e.g. ASR 9006"></div>
+          <div class="full"><label for="f_purpose">Purpose / function<span class="map">resourceCharacteristic: purpose</span></label>
+            <input id="f_purpose" maxlength="200" placeholder="e.g. Routes customer traffic for Jakarta region"></div>
+          <div class="full"><label for="f_description">Description<span class="map">description</span></label>
+            <textarea id="f_description" maxlength="1000"></textarea></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Status</legend>
+        <div class="grid">
+          <div><label for="f_resourceStatus">Condition<span class="map">resourceStatus</span></label>
+            <select id="f_resourceStatus"><option>available</option><option>reserved</option><option>standby</option><option>alarm</option><option>suspended</option><option>unknown</option></select></div>
+          <div><label for="f_usageState">Usage<span class="map">usageState</span></label>
+            <select id="f_usageState"><option>idle</option><option>active</option><option>busy</option></select></div>
+          <div><label for="f_administrativeState">Administrative state<span class="map">administrativeState</span></label>
+            <select id="f_administrativeState"><option>unlocked</option><option>locked</option><option>shutdown</option></select></div>
+          <div><label for="f_operationalState">Operational state<span class="map">operationalState</span></label>
+            <select id="f_operationalState"><option>enable</option><option>disable</option></select></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. Dates and value</legend>
+        <div class="grid">
+          <div><label for="f_start">In service since<span class="map">startOperatingDate</span></label>
+            <input type="date" id="f_start"></div>
+          <div><label for="f_end">Planned end of use<span class="map">endOperatingDate</span></label>
+            <input type="date" id="f_end"></div>
+          <div><label for="f_year">Purchase year<span class="map">resourceCharacteristic: purchaseYear</span></label>
+            <input type="number" id="f_year" step="1" placeholder="e.g. 2024"></div>
+          <div><label for="f_price">Purchase price (IDR)<span class="map">resourceCharacteristic: purchasePrice</span></label>
+            <input type="number" id="f_price" step="any" min="0" placeholder="e.g. 45000000"></div>
+          <div><label for="f_depr">Current depreciation value (IDR)<span class="map">resourceCharacteristic: currentDepreciationValue</span></label>
+            <input type="number" id="f_depr" step="any" min="0" placeholder="e.g. 9000000"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>4. Location</legend>
+        <div class="grid">
+          <div><label for="f_loc">Location name (building / room / site)<span class="map">place</span></label>
+            <input id="f_loc" maxlength="120" placeholder="e.g. Gatot Subroto Office, Floor 3"></div>
+          <div><label for="f_addr">Address<span class="map">resourceCharacteristic: address</span></label>
+            <input id="f_addr" maxlength="200" placeholder="Street, district, city"></div>
+          <div><label for="f_lat">GPS latitude<span class="map">resourceCharacteristic: latitude</span></label>
+            <input type="number" id="f_lat" step="any" placeholder="e.g. -6.2297"></div>
+          <div><label for="f_lng">GPS longitude<span class="map">resourceCharacteristic: longitude</span></label>
+            <input type="number" id="f_lng" step="any" placeholder="e.g. 106.8190"></div>
+        </div>
+        <p class="hint"><button type="button" class="small" id="btnGps">Use my current location</button> Fills the two GPS fields from this device.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>5. Responsible people</legend>
+        <div class="grid">
+          <div><label for="f_cust">Custodian (person in charge)<span class="map">relatedParty, role Custodian</span></label>
+            <input id="f_cust" maxlength="120"></div>
+          <div><label for="f_unit">Owning unit / department<span class="map">relatedParty, role OwningUnit</span></label>
+            <input id="f_unit" maxlength="120"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>6. Notes</legend>
+        <div class="rows" id="noteRows"></div>
+        <button type="button" class="small" id="btnAddNote">+ Add note</button>
+        <span class="map" style="display:inline-block;margin-left:8px">note</span>
+      </fieldset>
+
+      <fieldset>
+        <legend>7. Photo</legend>
+        <input type="file" id="f_image" accept="image/*">
+        <p class="hint">The image is resized to max 800 px and saved inside the asset (attachment).</p>
+        <div class="preview" id="imgPreview" hidden>
+          <img id="imgTag" alt="Asset photo preview"><button type="button" class="small" id="btnRemoveImg">Remove photo</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>8. Related assets</legend>
+        <div class="rows rel" id="relRows"></div>
+        <button type="button" class="small" id="btnAddRel">+ Add related asset</button>
+        <span class="map" style="display:inline-block;margin-left:8px">resourceRelationship</span>
+      </fieldset>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" data-close>Cancel</button>
+      <button type="submit" class="primary" id="btnSave">Save asset</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ View dialog ============ -->
+<dialog id="dlgView">
+  <div class="dlg-head"><h2 id="viewTitle">Asset</h2><button type="button" class="x" data-close aria-label="Close">&times;</button></div>
+  <div class="dlg-body" id="viewBody"></div>
+  <div class="dlg-foot">
+    <button type="button" data-close>Close</button>
+    <button type="button" id="btnViewEdit">Edit</button>
+  </div>
+</dialog>
+
+<!-- ============ Delete confirmation ============ -->
+<dialog id="dlgDelete" class="narrow">
+  <div class="dlg-head"><h2>Delete this asset?</h2><button type="button" class="x" data-close aria-label="Close">&times;</button></div>
+  <div class="dlg-body">
+    <p id="delText"></p>
+    <p class="hint">This cannot be undone.</p>
+  </div>
+  <div class="dlg-foot">
+    <button type="button" data-close>No, keep it</button>
+    <button type="button" class="danger" id="btnConfirmDelete">Yes, delete</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+const API = "/tmf-api/resourceInventoryManagement/v4/resource";
+const LIST_FIELDS = "name,category,resourceStatus,usageState,resourceCharacteristic,place";
+const CATEGORIES = ["Network equipment", "Server & storage", "Computer / laptop", "Mobile device",
+                    "Power & cooling", "Vehicle", "Furniture & office", "Other"];
+// characteristics this form controls (anything else on an asset is preserved untouched)
+const MANAGED = ["serialNumber", "brand", "model", "purpose", "address",
+                 "purchaseYear", "purchasePrice", "currentDepreciationValue", "latitude", "longitude"];
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const idr = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+const ch = (d, n) => ((d.resourceCharacteristic || []).find((c) => c.name === n) || {}).value;
+
+let assets = [];          // light list shown in the table
+let total = 0;
+let editing = null;       // full document being edited (null = creating)
+let image;                // undefined = unchanged, null = removed, object = new photo
+let deleteTarget = null;
+let viewId = null;
+
+/* ---------------------------------------------------------------- toast */
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = ""), 3500);
+}
+
+/* ------------------------------------------------- API calls + activity log */
+const logs = [];
+const shorten = (o) => JSON.stringify(o, (k, v) =>
+  k === "content" && typeof v === "string" && v.length > 80 ? `[base64 image, ${v.length} characters]` : v, 2);
+
+function renderLog() {
+  $("#logList").innerHTML = logs.map((l) => `
+    <details>
+      <summary><span class="m">${esc(l.method)}</span><span>${esc(l.url)}</span>
+        <span class="${l.status >= 200 && l.status < 300 ? "ok" : "err"}">${l.status || "no response"}</span><span>${l.ms} ms</span></summary>
+      <pre>${l.req !== undefined ? "REQUEST BODY\n" + esc(shorten(l.req)) + "\n\n" : ""}RESPONSE\n${esc(l.res === null ? "(empty - no content)" : typeof l.res === "string" ? l.res : shorten(l.res))}</pre>
+    </details>`).join("");
+}
+
+async function api(method, url, body) {
+  const opt = { method, headers: {} };
+  if (body !== undefined) {
+    opt.headers["Content-Type"] = method === "PATCH" ? "application/merge-patch+json" : "application/json";
+    opt.body = JSON.stringify(body);
+  }
+  const t0 = performance.now();
+  let res, data = null;
+  try {
+    res = await fetch(url, opt);
+  } catch (e) {
+    logs.unshift({ method, url, status: 0, ms: 0, req: body, res: String(e) });
+    renderLog();
+    throw new Error("Cannot reach the server. Is uvicorn still running in the terminal?");
+  }
+  const text = await res.text();
+  if (text) { try { data = JSON.parse(text); } catch { data = text; } }
+  logs.unshift({ method, url, status: res.status, ms: Math.round(performance.now() - t0), req: body, res: data });
+  logs.length = Math.min(logs.length, 15);
+  renderLog();
+  if (!res.ok) throw new Error((data && data.message) || `Request failed (${res.status})`);
+  return { data, headers: res.headers };
+}
+
+/* ------------------------------------------------------------ READ: list */
+async function loadAssets() {
+  try {
+    const { data, headers } = await api("GET", `${API}?limit=1000&fields=${LIST_FIELDS}`);
+    assets = data;
+    total = Number(headers.get("X-Total-Count")) || data.length;
+    renderTable();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+function placeText(d) {
+  const p = (d.place || [])[0];
+  if (p && p.name) return p.name;
+  const la = ch(d, "latitude"), lo = ch(d, "longitude");
+  return la !== undefined && lo !== undefined ? `${la}, ${lo}` : "";
+}
+
+function renderTable() {
+  const q = $("#q").value.trim().toLowerCase();
+  const st = $("#statusFilter").value;
+  const list = assets.filter((d) => {
+    if (st && d.resourceStatus !== st) return false;
+    if (!q) return true;
+    const hay = [d.name, d.category, ch(d, "serialNumber"), ch(d, "brand"), ch(d, "model"), placeText(d)].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+  $("#rows").innerHTML = list.map((d) => {
+    const price = ch(d, "purchasePrice");
+    return `<tr>
+      <td><strong>${esc(d.name)}</strong><div class="cat">${esc(d.category || "")}${ch(d, "brand") ? " &middot; " + esc(ch(d, "brand")) : ""}</div></td>
+      <td>${esc(ch(d, "serialNumber") ?? "")}</td>
+      <td>${d.resourceStatus ? `<span class="pill ${esc(d.resourceStatus)}">${esc(d.resourceStatus)}</span>` : ""}</td>
+      <td>${esc(d.usageState || "")}</td>
+      <td>${esc(placeText(d))}</td>
+      <td class="num">${price !== undefined ? esc(idr(price)) : ""}</td>
+      <td class="actions"><div class="btns">
+        <button class="small" data-act="view" data-id="${esc(d.id)}">View</button>
+        <button class="small" data-act="edit" data-id="${esc(d.id)}">Edit</button>
+        <button class="small" data-act="del" data-id="${esc(d.id)}">Delete</button>
+      </div></td></tr>`;
+  }).join("");
+  const empty = $("#empty");
+  empty.hidden = list.length > 0;
+  empty.textContent = assets.length === 0 ? "No assets yet. Click “+ Add asset” to create the first one." : "No assets match your search.";
+  $("#count").textContent = `Showing ${list.length} of ${total} asset${total === 1 ? "" : "s"} (max 1000)`;
+}
+
+/* ----------------------------------------------------------- READ: detail */
+const kv = (label, text) => (text === undefined || text === null || text === "") ? "" :
+  `<div class="kv"><dt>${esc(label)}</dt><dd>${esc(text)}</dd></div>`;
+
+async function openView(id) {
+  try {
+    const { data: d } = await api("GET", `${API}/${encodeURIComponent(id)}`);
+    viewId = id;
+    $("#viewTitle").textContent = d.name;
+    const la = ch(d, "latitude"), lo = ch(d, "longitude");
+    const gps = la !== undefined && lo !== undefined
+      ? `<div class="kv"><dt>GPS</dt><dd>${esc(la)}, ${esc(lo)} &middot; <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${encodeURIComponent(la + "," + lo)}">Open in Google Maps</a></dd></div>` : "";
+    const party = (role) => ((d.relatedParty || []).find((p) => p.role === role) || {}).name;
+    const num = (n) => (n === undefined ? undefined : idr(n));
+    const img = (d.attachment || []).find((a) => /^image\/[a-z0-9.+-]+$/i.test(a.mimeType || "") && /^[A-Za-z0-9+/=]+$/.test(a.content || ""));
+    $("#viewBody").innerHTML = `
+      <div class="sec" style="margin-top:0">Asset details</div><dl>
+        ${kv("Type", d.category)}${kv("Brand", ch(d, "brand"))}${kv("Model", ch(d, "model"))}
+        ${kv("Serial number", ch(d, "serialNumber"))}${kv("Purpose", ch(d, "purpose"))}${kv("Description", d.description)}</dl>
+      <div class="sec">Status</div><dl>
+        ${kv("Condition", d.resourceStatus)}${kv("Usage", d.usageState)}
+        ${kv("Administrative state", d.administrativeState)}${kv("Operational state", d.operationalState)}</dl>
+      <div class="sec">Dates and value</div><dl>
+        ${kv("In service since", d.startOperatingDate)}${kv("Planned end of use", d.endOperatingDate)}
+        ${kv("Purchase year", ch(d, "purchaseYear"))}${kv("Purchase price", num(ch(d, "purchasePrice")))}
+        ${kv("Current depreciation value", num(ch(d, "currentDepreciationValue")))}</dl>
+      <div class="sec">Location</div><dl>
+        ${kv("Location", (d.place || [])[0] && d.place[0].name)}${kv("Address", ch(d, "address"))}${gps}</dl>
+      <div class="sec">People</div><dl>
+        ${kv("Custodian", party("Custodian"))}${kv("Owning unit", party("OwningUnit"))}</dl>
+      ${(d.note || []).length ? `<div class="sec">Notes</div>` + d.note.map((n) =>
+        `<div class="note">${esc(n.text)}<br><small>${esc(n.author || "Unknown")} &middot; ${esc(n.date ? new Date(n.date).toLocaleString() : "")}</small></div>`).join("") : ""}
+      ${(d.resourceRelationship || []).length ? `<div class="sec">Related assets</div>` + d.resourceRelationship.map((r) =>
+        `<div class="kv"><dt>${esc(r.relationshipType || "relatedTo")}</dt><dd>${esc((r.resource || {}).name || (r.resource || {}).id || "")}</dd></div>`).join("") : ""}
+      ${img ? `<div class="sec">Photo</div><img class="viewimg" alt="Photo of ${esc(d.name)}" src="data:${img.mimeType};base64,${img.content}">` : ""}
+      <div class="sec">System fields</div><dl>${kv("id", d.id)}${kv("href", d.href)}${kv("@type", d["@type"])}</dl>
+      <details><summary>Show the raw TMF639 JSON</summary><pre>${esc(shorten(d))}</pre></details>`;
+    $("#dlgView").showModal();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ----------------------------------------------------- CREATE / UPDATE form */
+function fillSelect(sel, items, value) {
+  sel.innerHTML = items.map((i) => `<option>${esc(i)}</option>`).join("");
+  sel.value = value;
+}
+
+function addNoteRow(n = {}) {
+  const div = document.createElement("div");
+  div.dataset.date = n.date || "";
+  div.dataset.nid = n.id || "";
+  div.innerHTML = `<input placeholder="Author" aria-label="Note author" maxlength="80" value="${esc(n.author || "")}">
+    <textarea placeholder="Note text" aria-label="Note text" maxlength="1000">${esc(n.text || "")}</textarea>
+    <button type="button" class="small" aria-label="Remove note">Remove</button>`;
+  div.querySelector("button").onclick = () => div.remove();
+  $("#noteRows").appendChild(div);
+}
+
+function addRelRow(r = {}) {
+  const div = document.createElement("div");
+  const selfId = editing ? editing.id : null;
+  const rid = (r.resource || {}).id || "";
+  const opts = assets.filter((a) => a.id !== selfId);
+  if (rid && !opts.some((a) => a.id === rid)) opts.push({ id: rid, name: (r.resource || {}).name || rid });
+  div.innerHTML = `<select aria-label="Related asset"><option value="">Choose an asset...</option>
+      ${opts.map((a) => `<option value="${esc(a.id)}" data-name="${esc(a.name)}" ${a.id === rid ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>
+    <input placeholder="Relationship (e.g. connectedTo)" aria-label="Relationship type" maxlength="60" value="${esc(r.relationshipType || "")}">
+    <button type="button" class="small" aria-label="Remove related asset">Remove</button>`;
+  div.querySelector("button").onclick = () => div.remove();
+  $("#relRows").appendChild(div);
+}
+
+function showImage(att) {
+  const ok = att && /^image\/[a-z0-9.+-]+$/i.test(att.mimeType || "") && /^[A-Za-z0-9+/=]+$/.test(att.content || "");
+  $("#imgPreview").hidden = !ok;
+  if (ok) $("#imgTag").src = `data:${att.mimeType};base64,${att.content}`;
+}
+
+async function openForm(id) {
+  editing = null; image = undefined;
+  if (id) {
+    try { editing = (await api("GET", `${API}/${encodeURIComponent(id)}`)).data; }
+    catch (e) { toast(e.message, true); return; }
+  }
+  const d = editing || {};
+  $("#formTitle").textContent = editing ? `Edit asset: ${d.name}` : "Add asset";
+  $("#btnSave").textContent = editing ? "Save changes" : "Save asset";
+  $("#formErr").className = "formerr";
+  $("#assetForm").reset();
+  const cats = CATEGORIES.includes(d.category) || !d.category ? CATEGORIES : [d.category, ...CATEGORIES];
+  fillSelect($("#f_category"), cats, d.category || "Network equipment");
+  const val = (id2, v) => { $("#" + id2).value = v ?? ""; };
+  val("f_name", d.name); val("f_description", d.description);
+  val("f_serial", ch(d, "serialNumber")); val("f_brand", ch(d, "brand")); val("f_model", ch(d, "model"));
+  val("f_purpose", ch(d, "purpose")); val("f_addr", ch(d, "address"));
+  val("f_year", ch(d, "purchaseYear")); val("f_price", ch(d, "purchasePrice")); val("f_depr", ch(d, "currentDepreciationValue"));
+  val("f_lat", ch(d, "latitude")); val("f_lng", ch(d, "longitude"));
+  val("f_start", d.startOperatingDate); val("f_end", d.endOperatingDate);
+  val("f_resourceStatus", d.resourceStatus || "available"); val("f_usageState", d.usageState || "idle");
+  val("f_administrativeState", d.administrativeState || "unlocked"); val("f_operationalState", d.operationalState || "enable");
+  val("f_loc", (d.place || [])[0] && d.place[0].name);
+  const party = (role) => ((d.relatedParty || []).find((p) => p.role === role) || {}).name;
+  val("f_cust", party("Custodian")); val("f_unit", party("OwningUnit"));
+  $("#noteRows").innerHTML = ""; (d.note || []).forEach(addNoteRow);
+  $("#relRows").innerHTML = ""; (d.resourceRelationship || []).forEach(addRelRow);
+  showImage((d.attachment || [])[0]);
+  $("#dlgForm").showModal();
+  $("#f_name").focus();
+}
+
+/* Read the form and build the TMF639 JSON document (throws Error with a friendly message) */
+function collect() {
+  const v = (id) => $("#" + id).value.trim();
+  const base = editing ? structuredClone(editing) : {};
+  const doc = base;
+  const put = (k, val) => { if (val === "" || val === undefined) delete doc[k]; else doc[k] = val; };
+  const number = (id, label, min, max, integer) => {
+    const s = v(id);
+    if (s === "") return undefined;
+    const n = Number(s);
+    if (!Number.isFinite(n)) throw new Error(`${label} must be a number.`);
+    if (integer && !Number.isInteger(n)) throw new Error(`${label} must be a whole number.`);
+    if (min !== undefined && n < min) throw new Error(`${label} must be at least ${min}.`);
+    if (max !== undefined && n > max) throw new Error(`${label} must be at most ${max}.`);
+    return n;
+  };
+
+  const name = v("f_name");
+  if (!name) throw new Error("Asset name is required.");
+  doc["@type"] = doc["@type"] || "Resource";
+  doc.name = name;
+  put("category", v("f_category")); put("description", v("f_description"));
+  put("resourceStatus", v("f_resourceStatus")); put("usageState", v("f_usageState"));
+  put("administrativeState", v("f_administrativeState")); put("operationalState", v("f_operationalState"));
+  put("startOperatingDate", v("f_start")); put("endOperatingDate", v("f_end"));
+  if (v("f_start") && v("f_end") && v("f_end") < v("f_start")) throw new Error("“Planned end of use” cannot be before “In service since”.");
+
+  const year = number("f_year", "Purchase year", 1950, new Date().getFullYear() + 1, true);
+  const price = number("f_price", "Purchase price", 0);
+  const depr = number("f_depr", "Current depreciation value", 0);
+  const lat = number("f_lat", "GPS latitude", -90, 90);
+  const lng = number("f_lng", "GPS longitude", -180, 180);
+  if ((lat === undefined) !== (lng === undefined)) throw new Error("Enter both GPS latitude and longitude, or leave both empty.");
+  if (price !== undefined && depr !== undefined && depr > price) throw new Error("Current depreciation value cannot be higher than the purchase price.");
+
+  // characteristics: keep the ones this form does not manage, then add the managed ones
+  const chars = (doc.resourceCharacteristic || []).filter((c) => !MANAGED.includes(c.name));
+  const add = (n, value, type) => { if (value !== undefined && value !== "") chars.push({ name: n, value, valueType: type }); };
+  add("serialNumber", v("f_serial"), "string"); add("brand", v("f_brand"), "string");
+  add("model", v("f_model"), "string"); add("purpose", v("f_purpose"), "string");
+  add("address", v("f_addr"), "string"); add("purchaseYear", year, "number");
+  add("purchasePrice", price, "number"); add("currentDepreciationValue", depr, "number");
+  add("latitude", lat, "number"); add("longitude", lng, "number");
+  put("resourceCharacteristic", chars.length ? chars : "");
+
+  const cat = v("f_category");
+  doc.resourceSpecification = { id: slug(cat), name: cat, "@referredType": "ResourceSpecification" };
+
+  const loc = v("f_loc");
+  put("place", loc ? [{ id: slug(loc), name: loc, role: "installationSite", "@referredType": "GeographicSite" }] : "");
+
+  const parties = (doc.relatedParty || []).filter((p) => p.role !== "Custodian" && p.role !== "OwningUnit");
+  if (v("f_cust")) parties.push({ id: slug(v("f_cust")), name: v("f_cust"), role: "Custodian", "@referredType": "Individual" });
+  if (v("f_unit")) parties.push({ id: slug(v("f_unit")), name: v("f_unit"), role: "OwningUnit", "@referredType": "Organization" });
+  put("relatedParty", parties.length ? parties : "");
+
+  const notes = [...$("#noteRows").children].map((r) => {
+    const [a, t] = r.querySelectorAll("input,textarea");
+    return t.value.trim() ? { id: r.dataset.nid || uid(), author: a.value.trim() || undefined, date: r.dataset.date || new Date().toISOString(), text: t.value.trim() } : null;
+  }).filter(Boolean);
+  put("note", notes.length ? notes : "");
+
+  const rels = [...$("#relRows").children].map((r) => {
+    const sel = r.querySelector("select");
+    if (!sel.value) return null;
+    const opt = sel.selectedOptions[0];
+    return { relationshipType: r.querySelector("input").value.trim() || "relatedTo",
+             resource: { id: sel.value, href: `${API}/${sel.value}`, name: opt.dataset.name || opt.textContent, "@referredType": "Resource" } };
+  }).filter(Boolean);
+  put("resourceRelationship", rels.length ? rels : "");
+
+  if (image === null) delete doc.attachment;
+  else if (image) doc.attachment = [image];
+
+  return doc;
+}
+
+const isEmpty = (x) => x === undefined || (Array.isArray(x) && x.length === 0);
+const sameValue = (k, a, b) => {
+  if (isEmpty(a) && isEmpty(b)) return true;
+  if (k === "resourceCharacteristic" && Array.isArray(a) && Array.isArray(b)) {
+    const s = (x) => JSON.stringify([...x].sort((p, q) => p.name.localeCompare(q.name)));
+    return s(a) === s(b);
+  }
+  return JSON.stringify(a) === JSON.stringify(b);
+};
+
+/* PATCH body = only what changed; fields that were removed are sent as null */
+function buildPatch(orig, next) {
+  const patch = {};
+  for (const k of Object.keys(next)) if (k !== "id" && k !== "href" && !sameValue(k, next[k], orig[k])) patch[k] = next[k];
+  for (const k of Object.keys(orig)) if (k !== "id" && k !== "href" && !(k in next) && !isEmpty(orig[k])) patch[k] = null;
+  return patch;
+}
+
+async function shrinkImage(file, max = 800) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("That file is not a valid image.")); i.src = url; });
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.75).split(",")[1];
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function formError(msg) {
+  const e = $("#formErr");
+  e.textContent = msg;
+  e.className = "formerr show";
+  e.scrollIntoView({ block: "nearest" });
+}
+
+async function save(ev) {
+  ev.preventDefault();
+  $("#formErr").className = "formerr";
+  let doc;
+  try { doc = collect(); } catch (e) { formError(e.message); return; }
+  const btn = $("#btnSave");
+  btn.disabled = true;
+  try {
+    if (editing) {
+      const patch = buildPatch(editing, doc);
+      if (!Object.keys(patch).length) { $("#dlgForm").close(); toast("No changes to save."); return; }
+      await api("PATCH", `${API}/${encodeURIComponent(editing.id)}`, patch);
+      toast("Asset updated.");
+    } else {
+      delete doc.id; delete doc.href;
+      await api("POST", API, doc);
+      toast("Asset created.");
+    }
+    $("#dlgForm").close();
+    await loadAssets();
+  } catch (e) { formError(e.message); }
+  finally { btn.disabled = false; }
+}
+
+/* ------------------------------------------------------------------ DELETE */
+function askDelete(id) {
+  const d = assets.find((a) => a.id === id);
+  deleteTarget = id;
+  const serial = d && ch(d, "serialNumber");
+  $("#delText").innerHTML = `You are about to delete <strong>${esc(d ? d.name : id)}</strong>${serial ? ` (serial ${esc(serial)})` : ""}.`;
+  $("#dlgDelete").showModal();
+}
+
+async function confirmDelete() {
+  const btn = $("#btnConfirmDelete");
+  btn.disabled = true;
+  try {
+    await api("DELETE", `${API}/${encodeURIComponent(deleteTarget)}`);
+    $("#dlgDelete").close();
+    toast("Asset deleted.");
+    await loadAssets();
+  } catch (e) { $("#dlgDelete").close(); toast(e.message, true); }
+  finally { btn.disabled = false; }
+}
+
+/* ------------------------------------------------------------------ wiring */
+$("#btnAdd").onclick = () => openForm(null);
+$("#assetForm").addEventListener("submit", save);
+$("#btnAddNote").onclick = () => addNoteRow();
+$("#btnAddRel").onclick = () => addRelRow();
+$("#btnConfirmDelete").onclick = confirmDelete;
+$("#btnViewEdit").onclick = () => { $("#dlgView").close(); openForm(viewId); };
+$("#q").addEventListener("input", renderTable);
+$("#statusFilter").addEventListener("change", renderTable);
+
+$("#rows").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  if (b.dataset.act === "view") openView(b.dataset.id);
+  if (b.dataset.act === "edit") openForm(b.dataset.id);
+  if (b.dataset.act === "del") askDelete(b.dataset.id);
+});
+
+document.querySelectorAll("dialog").forEach((dlg) => {
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => dlg.close()));
+});
+
+$("#f_image").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const b64 = await shrinkImage(file);
+    image = { id: uid(), attachmentType: "image", name: file.name, mimeType: "image/jpeg", content: b64 };
+    showImage(image);
+  } catch (err) { formError(err.message); e.target.value = ""; }
+});
+$("#btnRemoveImg").onclick = () => { image = null; $("#f_image").value = ""; $("#imgPreview").hidden = true; };
+
+$("#btnGps").onclick = () => {
+  if (!navigator.geolocation) { formError("This browser cannot read your location."); return; }
+  navigator.geolocation.getCurrentPosition(
+    (p) => { $("#f_lat").value = p.coords.latitude.toFixed(6); $("#f_lng").value = p.coords.longitude.toFixed(6); },
+    () => formError("Could not get your location. Allow location access, or type the coordinates yourself."));
+};
+
+loadAssets();
+</script>
+</body>
+</html>
