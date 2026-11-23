@@ -3,117 +3,298 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Asset Inventory</title>
+<title>Asset Inventory (TMF639)</title>
 <style>
-  :root {
-    --red: #c8102e;
-    --red-dark: #a00d25;
-    --ink: #111;
-    --muted: #666;
-    --line: #d9d9d9;
-    --soft: #f5f5f5;
-    --bg: #fff;
+  * {
+    box-sizing: border-box;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
-  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-           padding: 16px 24px; border-bottom: 3px solid var(--red); }
-  h1 { margin: 0; font-size: 22px; }
-  .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-  .hdr-actions { display: flex; gap: 12px; align-items: center; }
-  .hdr-actions a { color: var(--ink); font-size: 14px; }
-  main { padding: 20px 24px 40px; max-width: 1200px; margin: 0 auto; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font: 14px/1.4 Arial, Helvetica, sans-serif;
+    color: #000;
+    background: #fff;
+  }
 
-  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--ink); background: #fff; color: var(--ink); padding: 7px 14px; }
-  button:hover { background: var(--soft); }
-  button.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
-  button.primary:hover { background: var(--red-dark); }
-  button.danger { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
-  button.danger:hover { background: var(--red-dark); }
-  button.small { padding: 4px 10px; font-size: 13px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  /* Main layout boxes */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border: 2px solid #000;
+    margin-bottom: 16px;
+    background: #fff;
+  }
+  h1 { margin: 0; font-size: 20px; }
+  .sub { margin: 2px 0 0; font-size: 12px; }
+  .hdr-actions { display: flex; gap: 10px; align-items: center; }
+  .hdr-actions a {
+    color: #000;
+    text-decoration: underline;
+    padding: 6px 10px;
+    border: 1px solid #000;
+  }
+  main { max-width: 1200px; margin: 0 auto; }
 
-  .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  /* Buttons */
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    padding: 6px 12px;
+  }
+  button:hover { background: #000; color: #fff; }
+  button.primary, button.danger {
+    background: #000;
+    color: #fff;
+    border: 2px solid #000;
+    font-weight: bold;
+  }
+  button.primary:hover, button.danger:hover {
+    background: #fff;
+    color: #000;
+  }
+  button.small { padding: 3px 8px; font-size: 12px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+  }
+
+  /* Toolbar box */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid #000;
+    margin-bottom: 16px;
+  }
   .toolbar input[type=search] { flex: 1 1 240px; }
-  .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .count { font-size: 12px; margin-left: auto; border: 1px solid #000; padding: 4px 8px; }
 
-  input, select, textarea { font: inherit; color: var(--ink); background: #fff; border: 1px solid #999; border-radius: 6px; padding: 7px 9px; width: 100%; }
+  input, select, textarea {
+    font: inherit;
+    color: #000;
+    background: #fff;
+    border: 1px solid #000;
+    padding: 6px 8px;
+    width: 100%;
+  }
   textarea { resize: vertical; min-height: 60px; }
 
-  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
-  table { border-collapse: collapse; width: 100%; min-width: 820px; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  tr:last-child td { border-bottom: 0; }
-  td .cat { color: var(--muted); font-size: 12px; }
+  /* Table box */
+  .tablewrap {
+    overflow-x: auto;
+    border: 2px solid #000;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 820px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #000;
+    vertical-align: top;
+  }
+  th {
+    background: #fff;
+    border-bottom: 2px solid #000;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  td .cat { font-size: 12px; }
   td.num { text-align: right; white-space: nowrap; }
   td.actions { white-space: nowrap; }
-  .btns { display: flex; gap: 6px; }
-  .empty { padding: 36px 16px; text-align: center; color: var(--muted); }
+  .btns { display: flex; gap: 4px; }
+  .empty { padding: 24px 16px; text-align: center; }
 
-  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
-  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #999; }
-  .pill.available::before { background: #1a8f3c; }
-  .pill.reserved::before { background: #d98a00; }
-  .pill.alarm::before { background: var(--red); }
-  .pill.suspended::before, .pill.standby::before { background: #777; }
+  /* Plain boxed status badge */
+  .pill {
+    display: inline-block;
+    font-size: 12px;
+    border: 1px solid #000;
+    padding: 1px 6px;
+    white-space: nowrap;
+    background: #fff;
+    color: #000;
+  }
 
-  /* API activity */
-  .log { margin-top: 28px; }
+  /* API activity box */
+  .log {
+    margin-top: 24px;
+    padding: 12px;
+    border: 2px solid #000;
+  }
   .log h2 { font-size: 16px; margin: 0 0 4px; }
-  .log p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
-  .log details { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; }
-  .log summary { cursor: pointer; padding: 6px 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .log p { margin: 0 0 10px; font-size: 12px; }
+  .log details {
+    border: 1px solid #000;
+    margin-bottom: 6px;
+  }
+  .log summary {
+    cursor: pointer;
+    padding: 6px 8px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 12px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
   .log summary span { overflow-wrap: anywhere; min-width: 0; }
-  .log .m { font-weight: 700; min-width: 56px; }
-  .log .ok { color: #1a8f3c; font-weight: 700; }
-  .log .err { color: var(--red); font-weight: 700; }
-  pre { margin: 0; padding: 10px; background: var(--soft); overflow: auto; font-size: 12px; max-height: 260px; white-space: pre-wrap; word-break: break-word; }
+  .log .m { font-weight: bold; min-width: 52px; }
+  .log .ok, .log .err {
+    font-weight: bold;
+    border: 1px solid #000;
+    padding: 0 4px;
+  }
+  pre {
+    margin: 0;
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #000;
+    overflow: auto;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 12px;
+    max-height: 260px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
 
-  /* dialogs */
-  dialog { border: 0; border-radius: 10px; padding: 0; width: min(760px, 94vw); max-height: 92vh; box-shadow: 0 10px 40px rgba(0,0,0,.35); color: var(--ink); background: #fff; }
+  /* Dialog boxes */
+  dialog {
+    border: 3px solid #000;
+    padding: 0;
+    width: min(760px, 94vw);
+    max-height: 92vh;
+    color: #000;
+    background: #fff;
+  }
   dialog.narrow { width: min(460px, 94vw); }
-  dialog::backdrop { background: rgba(0,0,0,.5); }
-  .dlg-head { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 2; }
-  .dlg-head h2 { margin: 0; font-size: 18px; }
-  .dlg-body { padding: 16px 20px; }
-  .dlg-foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; position: sticky; bottom: 0; background: #fff; }
-  .x { border: 0; font-size: 22px; line-height: 1; padding: 2px 8px; }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
+  .dlg-head {
+    padding: 12px 16px;
+    border-bottom: 2px solid #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+  }
+  .dlg-head h2 { margin: 0; font-size: 16px; }
+  .dlg-body { padding: 14px 16px; }
+  .dlg-foot {
+    padding: 10px 16px;
+    border-top: 2px solid #000;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+  }
+  .x { border: 1px solid #000; font-size: 18px; line-height: 1; padding: 2px 8px; }
 
-  fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 16px; padding: 10px 14px 14px; }
-  legend { font-weight: 700; padding: 0 6px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  fieldset {
+    border: 2px solid #000;
+    margin: 0 0 14px;
+    padding: 10px 12px 12px;
+  }
+  legend {
+    font-weight: bold;
+    padding: 2px 6px;
+    border: 1px solid #000;
+    background: #fff;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
   .grid .full { grid-column: 1 / -1; }
-  label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 3px; }
-  .map { display: block; font-weight: 400; font-size: 11px; color: var(--muted); font-family: ui-monospace, Consolas, monospace; margin-top: 2px; }
-  .req { color: var(--red); }
-  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-  .rows > div { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+  label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; }
+  .map {
+    display: block;
+    font-weight: normal;
+    font-size: 11px;
+    font-family: "Courier New", Courier, monospace;
+    margin-top: 2px;
+  }
+  .req { font-weight: bold; }
+  .hint { font-size: 12px; margin: 6px 0 0; }
+  .rows > div { display: grid; grid-template-columns: 1fr 2fr auto; gap: 6px; margin-bottom: 6px; align-items: start; }
   .rows.rel > div { grid-template-columns: 2fr 1fr auto; }
-  .formerr { background: #fdecee; border: 1px solid var(--red); color: #7a0a1c; border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; display: none; }
+  .formerr {
+    background: #fff;
+    border: 2px dashed #000;
+    color: #000;
+    font-weight: bold;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    display: none;
+  }
   .formerr.show { display: block; }
-  .preview { margin-top: 8px; display: flex; gap: 12px; align-items: center; }
-  .preview img { max-width: 140px; max-height: 110px; border: 1px solid var(--line); border-radius: 6px; }
+  .preview { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+  .preview img { max-width: 140px; max-height: 110px; border: 1px solid #000; }
 
-  dl { margin: 0 0 14px; }
-  .kv { display: grid; grid-template-columns: 170px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--soft); }
-  .kv dt { color: var(--muted); font-size: 13px; }
-  .kv dd { margin: 0; word-break: break-word; }
-  .sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--red); font-weight: 700; margin: 16px 0 4px; }
-  .note { border-left: 3px solid var(--line); padding: 4px 10px; margin: 6px 0; }
-  .note small { color: var(--muted); }
-  .viewimg { max-width: 100%; max-height: 320px; border: 1px solid var(--line); border-radius: 8px; }
+  dl { margin: 0 0 12px; border: 1px solid #000; }
+  .kv { display: grid; grid-template-columns: 170px 1fr; border-bottom: 1px solid #000; }
+  .kv:last-child { border-bottom: 0; }
+  .kv dt {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 5px 8px;
+    border-right: 1px solid #000;
+  }
+  .kv dd { margin: 0; padding: 5px 8px; word-break: break-word; }
+  .kv dd a { color: #000; }
+  .sec {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: 1px solid #000;
+    border-bottom: 0;
+    padding: 4px 8px;
+    margin: 14px 0 0;
+    display: inline-block;
+  }
+  .note { border: 1px solid #000; padding: 6px 8px; margin: 0 0 6px; }
+  .viewimg { max-width: 100%; max-height: 320px; border: 1px solid #000; display: block; }
 
-  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 8px; display: none; z-index: 99; max-width: 90vw; }
-  #toast.err { background: var(--red); }
+  #toast {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    border: 2px solid #000;
+    padding: 8px 14px;
+    display: none;
+    z-index: 99;
+    max-width: 90vw;
+  }
+  #toast.err {
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    font-weight: bold;
+  }
   #toast.show { display: block; }
 
   @media (max-width: 640px) {
     .grid { grid-template-columns: 1fr; }
     .rows > div, .rows.rel > div { grid-template-columns: 1fr; }
-    .kv { grid-template-columns: 1fr; gap: 0; }
-    header, main { padding-left: 16px; padding-right: 16px; }
+    .kv { grid-template-columns: 1fr; }
+    .kv dt { border-right: 0; border-bottom: 1px solid #000; }
   }
 </style>
 </head>
@@ -122,7 +303,7 @@
 <header>
   <div>
     <h1>Asset Inventory</h1>
-    <p class="sub">TMF639 Resource Inventory Management &middot; v4.0.1 &middot; practice app</p>
+    <p class="sub">TMF639 Resource Inventory Management &middot; v4.0.1</p>
   </div>
   <div class="hdr-actions">
     <a href="/docs" target="_blank" rel="noopener">API docs</a>
@@ -153,7 +334,7 @@
 
   <section class="log">
     <h2>API activity</h2>
-    <p>Every click on this page sends a real TMF639 request. Open a line to see exactly what was sent and received.</p>
+    <p>Every action sends a TMF639 request. Click a row below to inspect the request and response JSON.</p>
     <div id="logList"></div>
   </section>
 </main>
@@ -304,7 +485,6 @@ const API = "/tmf-api/resourceInventoryManagement/v4/resource";
 const LIST_FIELDS = "name,category,resourceStatus,usageState,resourceCharacteristic,place";
 const CATEGORIES = ["Network equipment", "Server & storage", "Computer / laptop", "Mobile device",
                     "Power & cooling", "Vehicle", "Furniture & office", "Other"];
-// characteristics this form controls (anything else on an asset is preserved untouched)
 const MANAGED = ["serialNumber", "brand", "model", "purpose", "address",
                  "purchaseYear", "purchasePrice", "currentDepreciationValue", "latitude", "longitude"];
 
@@ -315,10 +495,10 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const idr = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 const ch = (d, n) => ((d.resourceCharacteristic || []).find((c) => c.name === n) || {}).value;
 
-let assets = [];          // light list shown in the table
+let assets = [];
 let total = 0;
-let editing = null;       // full document being edited (null = creating)
-let image;                // undefined = unchanged, null = removed, object = new photo
+let editing = null;
+let image;
 let deleteTarget = null;
 let viewId = null;
 
@@ -359,7 +539,7 @@ async function api(method, url, body) {
   } catch (e) {
     logs.unshift({ method, url, status: 0, ms: 0, req: body, res: String(e) });
     renderLog();
-    throw new Error("Cannot reach the server. Is uvicorn still running in the terminal?");
+    throw new Error("Cannot reach the server. Is the backend still running in the terminal?");
   }
   const text = await res.text();
   if (text) { try { data = JSON.parse(text); } catch { data = text; } }
@@ -403,7 +583,7 @@ function renderTable() {
     return `<tr>
       <td><strong>${esc(d.name)}</strong><div class="cat">${esc(d.category || "")}${ch(d, "brand") ? " &middot; " + esc(ch(d, "brand")) : ""}</div></td>
       <td>${esc(ch(d, "serialNumber") ?? "")}</td>
-      <td>${d.resourceStatus ? `<span class="pill ${esc(d.resourceStatus)}">${esc(d.resourceStatus)}</span>` : ""}</td>
+      <td>${d.resourceStatus ? `<span class="pill">${esc(d.resourceStatus)}</span>` : ""}</td>
       <td>${esc(d.usageState || "")}</td>
       <td>${esc(placeText(d))}</td>
       <td class="num">${price !== undefined ? esc(idr(price)) : ""}</td>
@@ -416,7 +596,7 @@ function renderTable() {
   const empty = $("#empty");
   empty.hidden = list.length > 0;
   empty.textContent = assets.length === 0 ? "No assets yet. Click “+ Add asset” to create the first one." : "No assets match your search.";
-  $("#count").textContent = `Showing ${list.length} of ${total} asset${total === 1 ? "" : "s"} (max 1000)`;
+  $("#count").textContent = `Showing ${list.length} of ${total} asset${total === 1 ? "" : "s"}`;
 }
 
 /* ----------------------------------------------------------- READ: detail */
@@ -451,11 +631,11 @@ async function openView(id) {
         ${kv("Custodian", party("Custodian"))}${kv("Owning unit", party("OwningUnit"))}</dl>
       ${(d.note || []).length ? `<div class="sec">Notes</div>` + d.note.map((n) =>
         `<div class="note">${esc(n.text)}<br><small>${esc(n.author || "Unknown")} &middot; ${esc(n.date ? new Date(n.date).toLocaleString() : "")}</small></div>`).join("") : ""}
-      ${(d.resourceRelationship || []).length ? `<div class="sec">Related assets</div>` + d.resourceRelationship.map((r) =>
-        `<div class="kv"><dt>${esc(r.relationshipType || "relatedTo")}</dt><dd>${esc((r.resource || {}).name || (r.resource || {}).id || "")}</dd></div>`).join("") : ""}
+      ${(d.resourceRelationship || []).length ? `<div class="sec">Related assets</div><dl>` + d.resourceRelationship.map((r) =>
+        `<div class="kv"><dt>${esc(r.relationshipType || "relatedTo")}</dt><dd>${esc((r.resource || {}).name || (r.resource || {}).id || "")}</dd></div>`).join("") + `</dl>` : ""}
       ${img ? `<div class="sec">Photo</div><img class="viewimg" alt="Photo of ${esc(d.name)}" src="data:${img.mimeType};base64,${img.content}">` : ""}
       <div class="sec">System fields</div><dl>${kv("id", d.id)}${kv("href", d.href)}${kv("@type", d["@type"])}</dl>
-      <details><summary>Show the raw TMF639 JSON</summary><pre>${esc(shorten(d))}</pre></details>`;
+      <details style="border:1px solid #000;margin-top:12px;"><summary style="padding:6px 8px;cursor:pointer;">Show the raw TMF639 JSON</summary><pre>${esc(shorten(d))}</pre></details>`;
     $("#dlgView").showModal();
   } catch (e) { toast(e.message, true); }
 }
@@ -529,7 +709,6 @@ async function openForm(id) {
   $("#f_name").focus();
 }
 
-/* Read the form and build the TMF639 JSON document (throws Error with a friendly message) */
 function collect() {
   const v = (id) => $("#" + id).value.trim();
   const base = editing ? structuredClone(editing) : {};
@@ -564,7 +743,6 @@ function collect() {
   if ((lat === undefined) !== (lng === undefined)) throw new Error("Enter both GPS latitude and longitude, or leave both empty.");
   if (price !== undefined && depr !== undefined && depr > price) throw new Error("Current depreciation value cannot be higher than the purchase price.");
 
-  // characteristics: keep the ones this form does not manage, then add the managed ones
   const chars = (doc.resourceCharacteristic || []).filter((c) => !MANAGED.includes(c.name));
   const add = (n, value, type) => { if (value !== undefined && value !== "") chars.push({ name: n, value, valueType: type }); };
   add("serialNumber", v("f_serial"), "string"); add("brand", v("f_brand"), "string");
@@ -616,7 +794,6 @@ const sameValue = (k, a, b) => {
   return JSON.stringify(a) === JSON.stringify(b);
 };
 
-/* PATCH body = only what changed; fields that were removed are sent as null */
 function buildPatch(orig, next) {
   const patch = {};
   for (const k of Object.keys(next)) if (k !== "id" && k !== "href" && !sameValue(k, next[k], orig[k])) patch[k] = next[k];
